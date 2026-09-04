@@ -1,0 +1,1121 @@
+{
+  "name": "Test_Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "87606376-4c1d-4a9a-b79a-df2b3f9ccfa0",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -512,
+        624
+      ],
+      "webhookId": "f5c48345-6c9c-4df6-bc34-f303c3a0980e"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const message = ($json.chatInput || '').toLowerCase().trim();\n\nlet intent = 'unknown';\n\nconst hasTestPlan =\n  message.includes('test plan') ||\n  message.includes('testplan');\n\nconst hasTestCase =\n  message.includes('test case') ||\n  message.includes('testcase') ||\n  message.includes('test cases');\n\nconst hasBugTriage =\n  message.includes('bug triage') ||\n  message.includes('triage bug') ||\n  message.includes('triage bugs') ||\n  message.includes('bug triage');\n\nconst hasRCA =\n  message.includes('rca') ||\n  message.includes('root cause analysis') ||\n  message.includes('analysis');\n\nif(hasTestPlan && hasTestCase) {\n  intent = 'both';\n} else if (hasBugTriage) {\n  intent = 'bug_triage';\n} else if (hasTestCase) {\n  intent = 'test_case';\n} else if (hasTestPlan) {\n  intent = 'test_plan';\n} else if (hasRCA) {\n  intent = 'rca';\n}\n\nreturn {\n  json: {\n    ...$json,\n    intent\n  }\n};"
+      },
+      "id": "26d63841-0350-4746-b598-a4f52dbf96a1",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "test_plan",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e517bc95-105b-4e7e-ae8f-dff1ebc8c14b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "79bdeb25-9ffe-4753-bcbd-01e608316161",
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "test_case",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2028a76c-4ce6-4d4f-97b1-45c7bd8b2da2",
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "bug_triage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e6d20fd2-a6f9-4204-8c25-732c775b8971",
+                    "leftValue": "={{$json.intent}}",
+                    "rightValue": "rca",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "10603db6-e45e-4a1b-8c80-64c3dba5e37c",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Act as a Senior QA Engineer. Create a concise test plan from the requirement/Jira ticket.\n\nIf Jira ID is given, use Jira as source of truth. Do not invent facts.\n\n# Test Plan — <Feature>\n\n## Objective\n1-2 short sentences.\n\n## Scope\n### In Scope\nMax 5 bullets.\n\n### Out of Scope\nMax 3 bullets.\n\n## Requirement Understanding\nMax 3 bullets.\n\n## Testing Approach\nMax 5 relevant types only.\n\n## Test Scenarios\nMax 10 scenarios.\n\n| ID | Area | Scenario | Priority |\n|---|---|---|---|\n| TS-01 | Functional | Short scenario | P1 |\n\n## Test Data\nMax 5 items.\n\n## Dependencies\nMax 3 items.\n\n## Risks\nMax 3 items.\n\n## Regression Impact\nMax 3 items.\n\n## Entry Criteria\nMax 3 items.\n\n## Exit Criteria\nMax 3 items.\n\n## Automation Strategy\nMax 5 items.\n\n## Traceability\n| Requirement | Test IDs |\n|---|---|\n| R1 | TS-01, TS-02 |\n\nRules:\n- Return the COMPLETE test plan as Markdown.\n- Keep content short.\n- Maximum 1500 tokens.\n- No JSON.\n- No explanation outside the test plan."
+        }
+      },
+      "id": "88c02d48-fa7a-4926-8215-3c34b6e61d70",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "id": "fd7549c4-b51f-42ac-b6f0-727eef46e043",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        232,
+        152
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "uR6gpPF2MPMV1mHF",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "id": "5106c241-2118-4df4-ab05-997f941807fa",
+      "name": "Get an issue in Jira Software",
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        360,
+        152
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "Nj4OfDkq37NFeYzA",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "https://docs.google.com/document/d/1tLDvwdlO_myL9tIFoZtd58uYb0-aCH-iO3L-uCUpsaw/edit?tab=t.0",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "id": "a3466ce1-ae96-4072-841b-85c2ee71715c",
+      "name": "Update a document",
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        16
+      ],
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "KbVO4aQx5C7trkYB",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Act as a Senior QA Engineer. Create exactly 3 concise test cases from the requirement/Jira ticket.\n\nIf Jira ID is provided, use Jira Summary, Description and Acceptance Criteria as the source of truth. Do not invent requirements.\n\nSelect the 3 most important positive, negative or boundary scenarios.\n\nReturn ONLY this JSON array:\n\n[\n  {\n    \"tc_id\": \"TC-001\",\n    \"title\": \"\",\n    \"priority\": \"P1\",\n    \"type\": \"Functional\",\n    \"steps\": \"\",\n    \"expected_result\": \"\"\n  },\n  {\n    \"tc_id\": \"TC-002\",\n    \"title\": \"\",\n    \"priority\": \"P1\",\n    \"type\": \"Functional\",\n    \"steps\": \"\",\n    \"expected_result\": \"\"\n  },\n  {\n    \"tc_id\": \"TC-003\",\n    \"title\": \"\",\n    \"priority\": \"P1\",\n    \"type\": \"Functional\",\n    \"steps\": \"\",\n    \"expected_result\": \"\"\n  }\n]\n\nRules:\n- Exactly 3 test cases.\n- Keep all fields concise.\n- No Markdown.\n- No explanation."
+        }
+      },
+      "id": "7d870c95-6051-420a-b814-040c50322a79",
+      "name": "AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        240,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "id": "e17e0df8-e9e8-4e24-9216-505d9da1fd57",
+      "name": "Groq Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        232,
+        552
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "uR6gpPF2MPMV1mHF",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "id": "bb4e6baf-0898-4e2d-8df3-6d3fb08e60ac",
+      "name": "Get an issue in Jira Software1",
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        360,
+        552
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "Nj4OfDkq37NFeYzA",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output;\n\nconst testCases = typeof output === 'string'\n  ? JSON.parse(output)\n  : output;\n\nreturn testCases.map(tc => ({\n  json: tc\n}));"
+      },
+      "id": "b13aac71-e7f0-4920-9238-be4fb3f8a947",
+      "name": "Code in JavaScript1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1xIeEXQqB8_nJGJVN47cywAFoDtdpWDbdiS7_GHJ9_ts",
+          "mode": "list",
+          "cachedResultName": "Testcase sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xIeEXQqB8_nJGJVN47cywAFoDtdpWDbdiS7_GHJ9_ts/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1xIeEXQqB8_nJGJVN47cywAFoDtdpWDbdiS7_GHJ9_ts/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TC ID": "={{ $json.tc_id }}",
+            "Priority": "={{$json.priority}}",
+            "Title": "={{ $json.title }}",
+            "Type": "={{$json.type}}",
+            "Steps": "={{$json.steps}}",
+            "Expected Result": "={{$json.expected_result}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "TC ID",
+              "displayName": "TC ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Steps",
+              "displayName": "Steps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Expected Result",
+              "displayName": "Expected Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "cb19c0e9-60e0-417c-9405-8850ddd80238",
+      "name": "Append row in sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1120,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RfOUyvaNwfHFveOI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a QA Bug Triage Agent.\n\nProcess only Jira issues where Issue Type = Bug.\n\nUse ONLY the information available in the Jira issue.\nNever invent facts.\n\nDetermine:\n\njira_key\nsummary\nseverity: S0, S1, S2, S3, S4\npriority: P0, P1, P2, P3, P4\ncategory: Functional, UI/UX, API/Integration, Data, Performance, Security, Configuration, Other\nsuspected_layer: Frontend, Backend, API, Database, Infrastructure, Security, Unknown\ntriage_rationale\nrecommended_action: Hotfix Immediately, Fix in Current Sprint, Fix in Next Sprint, Investigate, Request More Information, Keep in Backlog\n\nAfter completing the triage, call the Google Sheets Append Row tool exactly once.\n\nPass the eight triage fields to the tool.\n\nDo not call the Sheets tool more than once.\nDo not retry the Sheets tool unless the tool itself reports a failure.\n\nAfter the tool succeeds, return:\n\"Bug triage completed and saved to Google Sheets.\""
+        }
+      },
+      "id": "8080b3d5-9012-4f81-8bcb-1f248dac2eb9",
+      "name": "AI Agent2",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "id": "ad76fee3-7374-4fe7-96cb-522b232c72c5",
+      "name": "Groq Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        168,
+        952
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "uR6gpPF2MPMV1mHF",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "id": "1233c110-a648-4c02-9920-891cb52eb48f",
+      "name": "Get an issue in Jira Software2",
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        296,
+        952
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "Nj4OfDkq37NFeYzA",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1kS3RbutZoZzWCdX40SysbSQWGMCS56gOe2CtSUlXvLc",
+          "mode": "list",
+          "cachedResultName": "Bug Triage N8N",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kS3RbutZoZzWCdX40SysbSQWGMCS56gOe2CtSUlXvLc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "bugtriage",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1kS3RbutZoZzWCdX40SysbSQWGMCS56gOe2CtSUlXvLc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "jira_key": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('jira_key', ``, 'string') }}",
+            "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('summary', ``, 'string') }}",
+            "severity": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('severity', ``, 'string') }}",
+            "priority": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('priority', ``, 'string') }}",
+            "category": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('category', ``, 'string') }}",
+            "suspected_layer": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('suspected_layer', ``, 'string') }}",
+            "triage_rationale": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('triage_rationale', ``, 'string') }}",
+            "recommended_action": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('recommended_action', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "jira_key",
+              "displayName": "jira_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suspected_layer",
+              "displayName": "suspected_layer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "triage_rationale",
+              "displayName": "triage_rationale",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recommended_action",
+              "displayName": "recommended_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "c73c3704-7a51-4a59-8e43-f597ff4fbc3a",
+      "name": "Append row in sheet in Google Sheets",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        424,
+        952
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RfOUyvaNwfHFveOI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Act as a Senior QA Engineer. Perform Root Cause Analysis for the Jira bug provided.\n\nIf Jira ID is given:\n- Retrieve Summary, Description, Steps, Expected Result and Actual Result.\n- Use Jira as the source of truth.\n- Do not invent facts.\n\nReturn ONLY JSON:\n\n{\n  \"jira_key\": \"\",\n  \"root_cause\": \"\",\n  \"affected_layer\": \"Frontend/Backend/API/Database/Infrastructure/Unknown\",\n  \"category\": \"Functional/UI/API/Data/Performance/Security/Other\",\n  \"evidence\": \"\",\n  \"fix_recommendation\": \"\",\n  \"prevention\": \"\"\n}\n\nRules:\n- Keep every field concise.\n- Root cause must be evidence-based.\n- If root cause cannot be confirmed, say \"Unknown\" and explain why.\n- No assumptions presented as facts.\n- No Markdown or reasoning."
+        }
+      },
+      "id": "f312834f-19e7-48b9-8024-a2e6ec51c882",
+      "name": "AI Agent3",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        1232
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "id": "2e8e1b0b-b4c0-4f4d-8824-76fd97cb2c0b",
+      "name": "Groq Chat Model3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        232,
+        1448
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "uR6gpPF2MPMV1mHF",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "issueKey": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Issue_Key', ``, 'string') }}",
+        "additionalFields": {}
+      },
+      "id": "7305edce-7bb4-4dec-ac9c-1450e111f386",
+      "name": "Get an issue in Jira Software3",
+      "type": "n8n-nodes-base.jiraTool",
+      "typeVersion": 1,
+      "position": [
+        360,
+        1448
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "Nj4OfDkq37NFeYzA",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "### 🧪 QA Test Agents — Sticky Note\n\n**🎯 Test Plan Agent**\nCreates a short **test plan** from Jira requirements.\n\n**📝 Test Case Agent**\nCreates **3 important executable test cases** covering positive, negative & boundary scenarios.\n\n**🐞 Bug Triage Agent**\nAnalyzes bugs and decides **Severity, Priority, Category, Layer & Recommended Action**.\n\n**🔍 RCA Agent**\nFinds the **Root Cause** of a bug and suggests **Fix & Prevention**.\n\n**📊 Output**\nAutomatically saves **Test Plans → Docs** and **Test Cases / Triage / RCA → Sheets**.\n",
+        "height": 624,
+        "width": 624
+      },
+      "id": "55f218c4-a482-4746-ad07-0cee295793f0",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1984,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Trigger",
+        "height": 384,
+        "width": 272
+      },
+      "id": "30895919-f9b4-4cb8-8865-2580b63efd65",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Action",
+        "height": 1792,
+        "width": 496
+      },
+      "id": "501e5706-8c38-440b-82e0-c9db4625cf65",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Test Plan Generator",
+        "height": 384,
+        "width": 432,
+        "color": 4
+      },
+      "id": "c55f4ec5-8582-4e9f-bd02-f6410f88b961",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Testcase Generator",
+        "height": 320,
+        "width": 432,
+        "color": 4
+      },
+      "id": "1d52e525-a0f8-4c2a-878f-db1911a3ec50",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Output",
+        "height": 1776,
+        "width": 384
+      },
+      "id": "e4e37265-41bd-4a05-9971-419dc042fec5",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        992,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## IBug Triage",
+        "height": 336,
+        "width": 416,
+        "color": 4
+      },
+      "id": "34f71bea-efd3-4caf-b5b4-eeee20aa97e4",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        128,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "content": "##  RCA",
+        "height": 384,
+        "width": 400,
+        "color": 4
+      },
+      "id": "c3ac523a-648f-4117-948f-87888e50d91f",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        176,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output;\n\nconst rca = typeof output === 'string'\n  ? JSON.parse(output)\n  : output;\n\nreturn [\n  {\n    json: rca\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        1184
+      ],
+      "id": "010325a1-7613-489c-baab-b29a046500dd",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1AMKnAX4m7cMNrcTcnYNPE4M0d0QtFN-MA8N6WyKRJgg",
+          "mode": "list",
+          "cachedResultName": "RCA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AMKnAX4m7cMNrcTcnYNPE4M0d0QtFN-MA8N6WyKRJgg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AMKnAX4m7cMNrcTcnYNPE4M0d0QtFN-MA8N6WyKRJgg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Jira Key": "={{ $json.jira_key }}",
+            "Root Cause": "={{$json.root_cause}}",
+            "Affected Layer": "={{$json.affected_layer}}",
+            "Category": "={{ $json.category }}",
+            "Evidence": "={{ $json.evidence }}",
+            "Fix Recommendation": "={{ $json.fix_recommendation }}",
+            "Prevention": "={{ $json.prevention }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Jira Key",
+              "displayName": "Jira Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Root Cause",
+              "displayName": "Root Cause",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Affected Layer",
+              "displayName": "Affected Layer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Evidence",
+              "displayName": "Evidence",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fix Recommendation",
+              "displayName": "Fix Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Prevention",
+              "displayName": "Prevention",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "a19254fa-2733-4eb0-b437-a7bf20ba012f",
+      "name": "RCA Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        1056
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RfOUyvaNwfHFveOI",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an issue in Jira Software3": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent3",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "RCA Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2f66f8da-4044-4402-991d-012d45e02922",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d16449a372247329d15143de7e26eace484b4ae3677fc80d044869f5e81c1b6c"
+  },
+  "nodeGroups": [],
+  "id": "w3AkSc1SoqRC64Rm",
+  "tags": []
+}
